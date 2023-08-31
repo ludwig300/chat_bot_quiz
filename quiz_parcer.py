@@ -1,4 +1,11 @@
+import os
+import random
 import re
+
+from dotenv import load_dotenv
+
+load_dotenv()
+filepath = os.getenv('FILEPATH')
 
 
 def get_quiz(filepath):
@@ -18,3 +25,22 @@ def get_quiz(filepath):
         value = re.sub(r'\n?Ответ:\n', '', answers[index])
         quiz[key] = value
     return quiz
+
+
+def get_random_question():
+    quiz = get_quiz(filepath)
+    random_question = random.choice(list(quiz.keys()))
+    answer = quiz[random_question]
+    return random_question, answer
+
+
+def get_user_score(user_id, r):
+    score = r.get(f"score_{user_id}")
+    if score is None:
+        return 0
+    return int(score.decode('utf-8'))
+
+
+def update_user_score(user_id, r, increment=1):
+    current_score = get_user_score(user_id, r)
+    r.set(f"score_{user_id}", current_score + increment)
