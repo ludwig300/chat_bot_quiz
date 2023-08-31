@@ -1,5 +1,3 @@
-ram_token
-
 # Quiz Bot Project
 
 ## Описание
