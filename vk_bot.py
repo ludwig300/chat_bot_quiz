@@ -72,18 +72,38 @@ if __name__ == "__main__":
             if event.text == "Новый вопрос":
                 question, answer = get_random_question()
                 r.set(user_id, answer)
-                send_vk_message(event, vk_api_instance, f"Вот ваш новый вопрос: {question}", keyboard_str)
+                send_vk_message(
+                    event,
+                    vk_api_instance,
+                    f"Вот ваш новый вопрос: {question}",
+                    keyboard_str
+                )
 
             elif event.text == "Сдаться":
                 correct_answer = r.get(user_id)
                 if correct_answer:
-                    send_vk_message(event, vk_api_instance, f"Вот правильный ответ: {correct_answer.decode('utf-8')}", keyboard_str)
+                    send_vk_message(
+                        event,
+                        vk_api_instance,
+                        f"Вот правильный ответ: {correct_answer.decode('utf-8')}",
+                        keyboard_str
+                    )
                 else:
-                    send_vk_message(event, vk_api_instance, "Вы еще не начали игру. Нажмите 'Новый вопрос' для начала.", keyboard_str)
+                    send_vk_message(
+                        event,
+                        vk_api_instance,
+                        "Вы еще не начали игру. Нажмите 'Новый вопрос' для начала.",
+                        keyboard_str
+                    )
 
             elif event.text == "Мой счет":
                 score = get_user_score(user_id, r)
-                send_vk_message(event, vk_api_instance, f"Ваш счет: {score}", keyboard_str)
+                send_vk_message(
+                    event,
+                    vk_api_instance,
+                    f"Ваш счет: {score}",
+                    keyboard_str
+                )
 
             else:
                 user_answer = event.text.strip().lower()
@@ -91,6 +111,16 @@ if __name__ == "__main__":
 
                 if user_answer == correct_answer:
                     update_user_score(user_id, r)
-                    send_vk_message(event, vk_api_instance, "Правильно! Поздравляю!", keyboard_str)
+                    send_vk_message(
+                        event,
+                        vk_api_instance,
+                        "Правильно! Поздравляю!",
+                        keyboard_str
+                    )
                 else:
-                    send_vk_message(event, vk_api_instance, "Неправильно… Попробуешь ещё раз?", keyboard_str)
+                    send_vk_message(
+                        event,
+                        vk_api_instance,
+                        "Неправильно… Попробуешь ещё раз?",
+                        keyboard_str
+                    )

@@ -9,14 +9,21 @@ from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
 
 from quiz_parcer import get_random_question, get_user_score, update_user_score
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                     level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 load_dotenv()
 redis_host = os.getenv('REDIS_HOST')
 redis_port = os.getenv('REDIS_PORT')
 redis_password = os.getenv('REDIS_PASSWORD')
-r = redis.Redis(host=redis_host, port=redis_port, password=redis_password, db=0)
+r = redis.Redis(
+    host=redis_host,
+    port=redis_port,
+    password=redis_password,
+    db=0
+)
 
 NEW_QUESTION, CHECK_ANSWER, GIVE_UP = range(3)
 
@@ -86,7 +93,6 @@ def show_score(update: Update, _: CallbackContext) -> int:
 
 
 def main():
-
     tg_token = os.getenv("TG_TOKEN")
     updater = Updater(token=tg_token, use_context=True)
     dp = updater.dispatcher
