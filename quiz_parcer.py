@@ -1,11 +1,5 @@
-import os
 import random
 import re
-
-from dotenv import load_dotenv
-
-load_dotenv()
-filepath = os.getenv('FILEPATH')
 
 
 def get_quiz(filepath):
@@ -27,8 +21,7 @@ def get_quiz(filepath):
     return quiz
 
 
-def get_random_question():
-    quiz = get_quiz(filepath)
+def get_random_question(quiz):  # Теперь принимает quiz как аргумент
     random_question = random.choice(list(quiz.keys()))
     answer = quiz[random_question]
     return random_question, answer
