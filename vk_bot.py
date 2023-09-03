@@ -7,7 +7,7 @@ import vk_api
 from dotenv import load_dotenv
 from vk_api.longpoll import VkEventType, VkLongPoll
 
-from quiz_parcer import get_random_question, get_user_score, update_user_score
+from quiz_parcer import get_random_question, get_quiz
 
 
 def send_vk_message(event, vk_api_instance, message, keyboard_str=None):
@@ -52,6 +52,8 @@ def get_keyboard():
 
 if __name__ == "__main__":
     load_dotenv()
+    filepath = os.getenv('FILEPATH')
+    quiz = get_quiz(filepath)
     vk_api_token = os.getenv('VK_API_TOKEN')
     vk_session = vk_api.VkApi(token=vk_api_token)
     vk_api_instance = vk_session.get_api()
@@ -70,7 +72,7 @@ if __name__ == "__main__":
             user_id = event.user_id
 
             if event.text == "Новый вопрос":
-                question, answer = get_random_question()
+                question, answer = get_random_question(quiz)
                 r.set(user_id, answer)
                 send_vk_message(
                     event,
@@ -97,7 +99,7 @@ if __name__ == "__main__":
                     )
 
             elif event.text == "Мой счет":
-                score = get_user_score(user_id, r)
+                score = int(r.get(f"score_{user_id}").decode('utf-8') or 0)
                 send_vk_message(
                     event,
                     vk_api_instance,
@@ -110,7 +112,8 @@ if __name__ == "__main__":
                 correct_answer = r.get(user_id).decode('utf-8').strip().lower()
 
                 if user_answer == correct_answer:
-                    update_user_score(user_id, r)
+                    current_score = int(r.get(f"score_{user_id}").decode('utf-8') or 0)
+                    r.set(f"score_{user_id}", current_score + 1)
                     send_vk_message(
                         event,
                         vk_api_instance,

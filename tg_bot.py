@@ -7,28 +7,15 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           Filters, MessageHandler, Updater)
 
-from quiz_parcer import get_random_question, get_user_score, update_user_score
+from quiz_parcer import get_random_question, get_quiz
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+logger = logging.getLogger(__name__)
 
-load_dotenv()
-redis_host = os.getenv('REDIS_HOST')
-redis_port = os.getenv('REDIS_PORT')
-redis_password = os.getenv('REDIS_PASSWORD')
-r = redis.Redis(
-    host=redis_host,
-    port=redis_port,
-    password=redis_password,
-    db=0
-)
 
 NEW_QUESTION, CHECK_ANSWER, GIVE_UP = range(3)
 
 
-def start(update: Update, _: CallbackContext) -> int:
+def start(update: Update, context: CallbackContext) -> int:
     text = "Добро пожаловать на викторину"
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard)
@@ -36,27 +23,31 @@ def start(update: Update, _: CallbackContext) -> int:
     return NEW_QUESTION
 
 
-def new_question(update: Update, _: CallbackContext) -> int:
+def new_question(update: Update, context: CallbackContext) -> int:
     user_id = update.message.chat_id
-    question, answer = get_random_question()
+    quiz = context.bot_data['quiz']
+    question, answer = get_random_question(quiz)
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard)
-
+    r = context.bot_data['redis']
     r.set(user_id, answer)
     update.message.reply_text(question, reply_markup=reply_markup)
     return CHECK_ANSWER
 
 
-def check_answer(update: Update, _: CallbackContext) -> int:
+def check_answer(update: Update, context: CallbackContext) -> int:
     user_id = update.message.chat_id
     user_answer = update.message.text.strip().lower()
+    r = context.bot_data['redis']
     correct_answer = r.get(user_id).decode('utf-8').strip().lower()
 
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard)
 
     if user_answer == correct_answer:
-        update_user_score(user_id, r)
+        current_score = int(r.get(f"score_{user_id}").decode('utf-8') or 0)
+        r.set(f"score_{user_id}", current_score + 1)
+
         update.message.reply_text(
             "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос».",
             reply_markup=reply_markup
@@ -70,8 +61,9 @@ def check_answer(update: Update, _: CallbackContext) -> int:
         return CHECK_ANSWER
 
 
-def give_up(update: Update, _: CallbackContext) -> int:
+def give_up(update: Update, context: CallbackContext) -> int:
     user_id = update.message.chat_id
+    r = context.bot_data['redis']
     correct_answer = r.get(user_id).decode('utf-8').strip().lower()
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard)
@@ -83,9 +75,10 @@ def give_up(update: Update, _: CallbackContext) -> int:
     return NEW_QUESTION
 
 
-def show_score(update: Update, _: CallbackContext) -> int:
+def show_score(update: Update, context: CallbackContext) -> int:
     user_id = update.message.chat_id
-    score = get_user_score(user_id, r)
+    r = context.bot_data['redis']
+    score = int(r.get(f"score_{user_id}").decode('utf-8') or 0)
     custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard)
     update.message.reply_text(f"Ваш счет: {score}", reply_markup=reply_markup)
@@ -93,10 +86,28 @@ def show_score(update: Update, _: CallbackContext) -> int:
 
 
 def main():
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+    load_dotenv()
+    filepath = os.getenv('FILEPATH')
+    quiz = get_quiz(filepath)
     tg_token = os.getenv("TG_TOKEN")
+    redis_host = os.getenv('REDIS_HOST')
+    redis_port = os.getenv('REDIS_PORT')
+    redis_password = os.getenv('REDIS_PASSWORD')
+
+    r = redis.Redis(
+        host=redis_host,
+        port=redis_port,
+        password=redis_password,
+        db=0
+    )
     updater = Updater(token=tg_token, use_context=True)
     dp = updater.dispatcher
-
+    dp.bot_data['redis'] = r
+    dp.bot_data['quiz'] = quiz
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
 

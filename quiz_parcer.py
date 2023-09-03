@@ -21,19 +21,7 @@ def get_quiz(filepath):
     return quiz
 
 
-def get_random_question(quiz):  # Теперь принимает quiz как аргумент
+def get_random_question(quiz):
     random_question = random.choice(list(quiz.keys()))
     answer = quiz[random_question]
     return random_question, answer
-
-
-def get_user_score(user_id, r):
-    score = r.get(f"score_{user_id}")
-    if score is None:
-        return 0
-    return int(score.decode('utf-8'))
-
-
-def update_user_score(user_id, r, increment=1):
-    current_score = get_user_score(user_id, r)
-    r.set(f"score_{user_id}", current_score + increment)
